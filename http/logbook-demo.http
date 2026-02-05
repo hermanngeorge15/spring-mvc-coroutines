@@ -1,0 +1,89 @@
+### ============================================================
+### Zalando Logbook Demo (HTTP request/response masking)
+### ============================================================
+###
+### Start with: ./gradlew bootRun --args='--spring.profiles.active=logbook'
+###
+### How it works:
+###   - Logbook intercepts HTTP requests/responses BEFORE they reach the controller
+###   - Logs full request/response as JSON at TRACE level (org.zalando.logbook)
+###   - Sensitive data is masked based on:
+###     a) application-logbook.yml: obfuscate.headers, obfuscate.parameters, obfuscate.json-body-fields
+###     b) LogbookConfiguration bean: custom JsonPathBodyFilters for partial masking
+###
+### What to look for in Logbook TRACE logs:
+###   - Request body:  "password":"***REDACTED***", "email":"***@example.com"
+###   - Response body:  "token":"***REDACTED***"
+###   - Headers:  Authorization: XXX, X-API-Key: XXX
+###   - Query params:  password=XXX, token=XXX
+###   - creditCardNumber: partial mask "4111-****-****-1111" (custom BodyFilter)
+### ============================================================
+
+
+### 1. LOGIN
+### Logbook request:  "password":"***REDACTED***", "email":"***@example.com"
+### Logbook response: "token":"***REDACTED***"
+
+POST http://{{host}}/api/logbook/login
+Content-Type: application/json
+
+{
+  "username": "john.doe",
+  "password": "SuperSecret123!",
+  "email": "john.doe@example.com"
+}
+
+### 2. PAYMENT
+### Logbook request: "creditCardNumber" masked, "cvv":"***REDACTED***", "email":"***@example.com"
+
+POST http://{{host}}/api/logbook/payment
+Content-Type: application/json
+
+{
+  "amount": 99.99,
+  "currency": "USD",
+  "creditCardNumber": "4111111111111111",
+  "cvv": "123",
+  "cardholderName": "John Doe",
+  "email": "john.doe@example.com"
+}
+
+### 3. PROFILE
+### Logbook request: "ssn":"***REDACTED***", "apiKey":"***REDACTED***",
+###   "email":"***@example.com", "phone":"***7890"
+
+POST http://{{host}}/api/logbook/profile
+Content-Type: application/json
+
+{
+  "name": "Jane Doe",
+  "email": "jane.doe@example.com",
+  "phone": "+1234567890",
+  "ssn": "123-45-6789",
+  "apiKey": "sk-abc123secret456"
+}
+
+### 4. PROTECTED with Bearer JWT
+### Logbook: Authorization header -> XXX
+
+GET http://{{host}}/api/logbook/protected
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+
+### 5. PROTECTED with X-API-Key
+### Logbook: X-API-Key header -> XXX
+
+GET http://{{host}}/api/logbook/protected
+X-API-Key: my-super-secret-api-key-12345
+
+### 6. LOGIN with leaked query parameters
+### Logbook: query params password=XXX, token=XXX
+
+POST http://{{host}}/api/logbook/login?password=leaked&token=leaked-token
+Content-Type: application/json
+
+{
+  "username": "test",
+  "password": "AnotherSecret!",
+  "email": "test@company.org"
+}
+

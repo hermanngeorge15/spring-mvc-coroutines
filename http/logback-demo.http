@@ -1,0 +1,70 @@
+### ============================================================
+### logstash-logback-encoder + MaskingJsonGeneratorDecorator Demo
+### ============================================================
+###
+### Start with: ./gradlew bootRun --args='--spring.profiles.active=json'
+###
+### How it works:
+###   - StructuredArguments.kv("field", value) emits sensitive data
+###     as separate JSON fields in the log output
+###   - MaskingJsonGeneratorDecorator intercepts JSON serialization
+###     and replaces sensitive field values
+###
+### What to look for in logs:
+###   - Separate JSON fields like "password":"***REDACTED***"
+###   - "email":"***@domain.com" (partial mask)
+###   - "phone":"***1234" (last 4 digits)
+###   - "creditCardNumber":"***REDACTED***"
+###   - "authorization":"***REDACTED***"
+### ============================================================
+
+
+### 1. LOGIN
+### Expected JSON fields: "password":"***REDACTED***", "email":"***@example.com"
+### Then: "token":"***REDACTED***" (JWT masked in field)
+
+POST http://{{host}}/api/logback/login
+Content-Type: application/json
+
+{
+  "username": "john.doe",
+  "password": "SuperSecret123!",
+  "email": "john.doe@example.com"
+}
+
+### 2. PAYMENT
+### Expected JSON fields: "creditCardNumber":"***REDACTED***", "cvv":"***REDACTED***", "email":"***@example.com"
+
+POST http://{{host}}/api/logback/payment
+Content-Type: application/json
+
+{
+  "amount": 99.99,
+  "currency": "USD",
+  "creditCardNumber": "4111111111111111",
+  "cvv": "123",
+  "cardholderName": "John Doe",
+  "email": "john.doe@example.com"
+}
+
+### 3. PROFILE
+### Expected JSON fields: "ssn":"***REDACTED***", "apiKey":"***REDACTED***",
+###   "email":"***@example.com", "phone":"***7890"
+
+POST http://{{host}}/api/logback/profile
+Content-Type: application/json
+
+{
+  "name": "Jane Doe",
+  "email": "jane.doe@example.com",
+  "phone": "+1234567890",
+  "ssn": "123-45-6789",
+  "apiKey": "sk-abc123secret456"
+}
+
+### 4. PROTECTED with Bearer JWT
+### Expected JSON field: "authorization":"***REDACTED***"
+
+GET http://{{host}}/api/logback/protected
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+

@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: spring-mvc-coroutines
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+      - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
+      - org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration
+
+server:
+  port: 9999
+
+# Logbook disabled by default - activate with profile "logbook"
+logbook:
+  filter:
+    enabled: false
