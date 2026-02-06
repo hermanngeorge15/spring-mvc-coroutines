@@ -40,3 +40,15 @@ data class UserProfileResponse(
     val name: String,
     val status: String
 )
+
+data class CustomTokenRequest(
+    val service: String,
+    val myCustomeToken1: String,
+    val mycustomtoken2: String,
+    val payload: String
+)
+
+data class CustomTokenResponse(
+    val status: String,
+    val service: String
+)

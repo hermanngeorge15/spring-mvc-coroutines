@@ -10,7 +10,34 @@ spring:
 server:
   port: 9999
 
-# Logbook disabled by default - activate with profile "logbook"
+# --- Logbook: masks HTTP request/response bodies, headers, and query params ---
 logbook:
   filter:
-    enabled: false
+    enabled: true
+  format:
+    style: json
+  obfuscate:
+    headers:
+      - Authorization
+      - X-API-Key
+      - X-Auth-Token
+      - Cookie
+      - Set-Cookie
+    parameters:
+      - password
+      - token
+      - apiKey
+      - secret
+    json-body-fields:
+      - password
+      - token
+      - refreshToken
+      - myCustomeToken1
+      - mycustomtoken2
+      - apiKey
+      - secret
+      - creditCardNumber
+      - cardNumber
+      - cvv
+      - ssn
+      - nationalId

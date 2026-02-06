@@ -1,6 +1,8 @@
 package com.kss.proj.springmvccoroutines.example
 
+import net.logstash.logback.argument.StructuredArguments.fields
 import net.logstash.logback.argument.StructuredArguments.kv
+import net.logstash.logback.marker.Markers
 import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -13,21 +15,16 @@ import org.springframework.web.bind.annotation.RestController
 /**
  * Demonstrates masking via logstash-logback-encoder + MaskingJsonGeneratorDecorator.
  *
- * How it works:
- *   - Uses StructuredArguments.kv("fieldName", value) to emit sensitive data as
- *     separate JSON fields in the log output.
- *   - MaskingJsonGeneratorDecorator intercepts the JSON serialization and replaces
- *     sensitive field values before they are written.
+ * Three approaches shown:
+ *
+ *   1. kv() per field     - each field is a separate JSON key
+ *   2. fields(object)     - ALL fields of the object become top-level JSON keys
+ *   3. Markers.append()   - the object is serialized under a nested JSON key
+ *
+ * All three go through Jackson serialization -> MaskingJsonGeneratorDecorator intercepts
+ * writeFieldName() + writeString() and masks sensitive values.
  *
  * Run with: ./gradlew bootRun --args='--spring.profiles.active=json'
- *
- * Masking behavior:
- *   - Fields like "password", "token", "ssn", "cvv", "apiKey" -> "***REDACTED***"
- *   - "email" -> "***@domain.com" (partial)
- *   - "phone" -> "***1234" (partial, last 4)
- *
- * NOTE: In text mode (no json profile), StructuredArguments render as key=value
- * in the message string, and MaskingPatternLayout applies regex-based masking.
  */
 @RestController
 @RequestMapping("/api/logback")
@@ -36,7 +33,10 @@ class LogbackDemoController {
     private val log = LoggerFactory.getLogger(javaClass)
 
     /**
-     * Login - masks password, email, and JWT token via structured JSON fields.
+     * APPROACH 1: kv() per field
+     * Each sensitive value becomes a separate top-level JSON field.
+     *
+     * Output: { "message": "...", "username": "john", "email": "***@example.com", "password": "***REDACTED***" }
      */
     @PostMapping("/login")
     fun login(@RequestBody request: LoginRequest): ResponseEntity<LoginResponse> {
@@ -57,19 +57,16 @@ class LogbackDemoController {
     }
 
     /**
-     * Payment - masks credit card number, CVV, and email.
+     * APPROACH 2: fields(object) - log the whole request body as top-level JSON fields
+     * The object is serialized via Jackson -> decorator masks each field.
+     *
+     * Output: { "message": "...", "amount": 99.99, "currency": "USD",
+     *           "creditCardNumber": "***REDACTED***", "cvv": "***REDACTED***",
+     *           "cardholderName": "John Doe", "email": "***@example.com" }
      */
     @PostMapping("/payment")
     fun processPayment(@RequestBody request: PaymentRequest): ResponseEntity<PaymentResponse> {
-        log.info("Processing payment: {}, {}",
-            kv("amount", request.amount),
-            kv("currency", request.currency)
-        )
-        log.info("Payment card details: {}, {}, {}",
-            kv("creditCardNumber", request.creditCardNumber),
-            kv("cvv", request.cvv),
-            kv("email", request.email)
-        )
+        log.info("Payment request body: {}", fields(request))
 
         return ResponseEntity.ok(
             PaymentResponse(
@@ -81,17 +78,16 @@ class LogbackDemoController {
     }
 
     /**
-     * Profile - masks SSN, email, phone, and apiKey.
+     * APPROACH 3: Markers.append() - log the whole body under a nested "request" key
+     * The object is serialized via Jackson under a named key -> decorator masks fields.
+     *
+     * Output: { "message": "...", "request": { "name": "Jane",
+     *           "email": "***@example.com", "phone": "***7890",
+     *           "ssn": "***REDACTED***", "apiKey": "***REDACTED***" } }
      */
     @PostMapping("/profile")
     fun updateProfile(@RequestBody request: UserProfileRequest): ResponseEntity<UserProfileResponse> {
-        log.info("Updating profile: {}", kv("name", request.name))
-        log.info("Profile sensitive data: {}, {}, {}, {}",
-            kv("ssn", request.ssn),
-            kv("email", request.email),
-            kv("phone", request.phone),
-            kv("apiKey", request.apiKey)
-        )
+        log.info(Markers.append("request", request), "Profile update request body")
 
         return ResponseEntity.ok(
             UserProfileResponse(id = "USR-001", name = request.name, status = "UPDATED")

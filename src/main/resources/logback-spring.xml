@@ -2,49 +2,20 @@
 <configuration>
     <springProperty scope="context" name="appName" source="spring.application.name"/>
 
-    <!--
-        Profiles control which masking layers are active:
+    <!-- ANSI color definitions -->
+    <conversionRule conversionWord="clr" class="org.springframework.boot.logging.logback.ColorConverter"/>
+    <conversionRule conversionWord="wex" class="org.springframework.boot.logging.logback.WhitespaceThrowableProxyConverter"/>
 
-        (no profile)     text output + MaskingPatternLayout regex masking
-        json             JSON output + MaskingJsonGeneratorDecorator field masking
-        logbook          adds Logbook HTTP request/response body masking
-        json,logbook     JSON output + Logbook (both)
-    -->
+    <!-- Human-readable console output with colors and regex-based masking -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+            <layout class="com.kss.proj.springmvccoroutines.logging.MaskingPatternLayout">
+                <pattern>%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(%5p){highlight} %clr(---){faint} %clr([%15.15t]){cyan} %clr(%-40.40logger{39}){blue} %clr(:){faint} %m%n%wex</pattern>
+            </layout>
+        </encoder>
+    </appender>
 
-    <!-- ==================== TEXT OUTPUT (default, when "json" profile is NOT active) ==================== -->
-    <springProfile name="!json">
-        <appender name="CONSOLE_TEXT" class="ch.qos.logback.core.ConsoleAppender">
-            <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
-                <layout class="com.kss.proj.springmvccoroutines.logging.MaskingPatternLayout">
-                    <pattern>%d{ISO8601} [%thread] %-5level %logger{36} - %msg%n</pattern>
-                </layout>
-            </encoder>
-        </appender>
-
-        <root level="INFO">
-            <appender-ref ref="CONSOLE_TEXT"/>
-        </root>
-    </springProfile>
-
-    <!-- ==================== JSON OUTPUT (when "json" profile IS active) ==================== -->
-    <springProfile name="json">
-        <appender name="CONSOLE_JSON" class="ch.qos.logback.core.ConsoleAppender">
-            <encoder class="net.logstash.logback.encoder.LogstashEncoder">
-                <jsonGeneratorDecorator class="com.kss.proj.springmvccoroutines.logging.MaskingJsonGeneratorDecorator"/>
-                <includeMdcKeyName>traceId</includeMdcKeyName>
-                <includeMdcKeyName>spanId</includeMdcKeyName>
-                <includeMdcKeyName>userId</includeMdcKeyName>
-                <customFields>{"application":"${appName}"}</customFields>
-            </encoder>
-        </appender>
-
-        <root level="INFO">
-            <appender-ref ref="CONSOLE_JSON"/>
-        </root>
-    </springProfile>
-
-    <!-- ==================== LOGBOOK TRACE (only when "logbook" profile is active) ==================== -->
-    <springProfile name="logbook">
-        <logger name="org.zalando.logbook" level="TRACE"/>
-    </springProfile>
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+    </root>
 </configuration>

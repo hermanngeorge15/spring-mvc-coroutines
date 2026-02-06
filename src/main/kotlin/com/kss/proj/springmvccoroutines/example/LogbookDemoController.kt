@@ -83,6 +83,18 @@ class LogbookDemoController {
     }
 
     /**
+     * Custom tokens - Logbook masks "myCustomeToken1" and "mycustomtoken2" in the request body.
+     */
+    @PostMapping("/custom-tokens")
+    fun customTokens(@RequestBody request: CustomTokenRequest): ResponseEntity<CustomTokenResponse> {
+        log.info("Custom tokens request for service: {}", request.service)
+
+        return ResponseEntity.ok(
+            CustomTokenResponse(status = "PROCESSED", service = request.service)
+        )
+    }
+
+    /**
      * Protected - Logbook masks Authorization and X-API-Key headers.
      */
     @GetMapping("/protected")

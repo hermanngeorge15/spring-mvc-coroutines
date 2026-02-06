@@ -2,12 +2,14 @@ package com.kss.proj.springmvccoroutines.logging
 
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.context.annotation.Profile
 import org.zalando.logbook.BodyFilter
+import org.zalando.logbook.Correlation
+import org.zalando.logbook.HttpLogWriter
+import org.zalando.logbook.Precorrelation
 import org.zalando.logbook.json.JsonPathBodyFilters
+import org.slf4j.LoggerFactory
 
 @Configuration
-@Profile("logbook")
 class LogbookConfiguration {
 
     @Bean
@@ -37,5 +39,15 @@ class LogbookConfiguration {
         )
 
         return filters.reduce { acc, filter -> BodyFilter.merge(acc, filter) }
+    }
+
+    @Bean
+    fun writer(): HttpLogWriter {
+        val logger = LoggerFactory.getLogger("org.zalando.logbook.Logbook")
+        return object : HttpLogWriter {
+            override fun isActive() = logger.isInfoEnabled
+            override fun write(precorrelation: Precorrelation, request: String) = logger.info(request)
+            override fun write(correlation: Correlation, response: String) = logger.info(response)
+        }
     }
 }
