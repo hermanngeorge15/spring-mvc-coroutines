@@ -1,5 +1,6 @@
 package com.kss.proj.springmvccoroutines.logging
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.zalando.logbook.BodyFilter
@@ -9,7 +10,12 @@ import org.zalando.logbook.Precorrelation
 import org.zalando.logbook.json.JsonPathBodyFilters
 import org.slf4j.LoggerFactory
 
+/**
+ * Logbook configuration for HTTP request/response logging.
+ * Enabled by default. Disable with: logbook.filter.enabled=false
+ */
 @Configuration
+@ConditionalOnProperty(name = ["logbook.filter.enabled"], havingValue = "true", matchIfMissing = true)
 class LogbookConfiguration {
 
     @Bean

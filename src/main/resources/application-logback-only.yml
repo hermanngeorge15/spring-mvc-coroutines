@@ -1,0 +1,8 @@
+# Profile: logback-only
+# Use pure Logback HTTP logging filter (no Logbook dependency)
+# Run with: ./gradlew bootRun --args='--spring.profiles.active=logback-only'
+
+# Disable Logbook, enable HttpLoggingFilter
+logbook:
+  filter:
+    enabled: false
