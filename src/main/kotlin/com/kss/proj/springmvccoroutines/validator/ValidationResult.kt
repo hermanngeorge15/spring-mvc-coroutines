@@ -1,9 +1,19 @@
 package com.kss.proj.springmvccoroutines.validator
 
-import com.kss.proj.springmvccoroutines.dto.ValidationError
+sealed interface ValidationResult {
+    val auditContext: AuditContext
+    val issues: List<ValidationIssue>
+
+    data class Success(
+        val enrichedMap: Map<String, Any?>,
+        override val auditContext: AuditContext,
+        override val issues: List<ValidationIssue> = emptyList()
+    ) : ValidationResult
+
+    data class Failure(
+        override val auditContext: AuditContext,
+        override val issues: List<ValidationIssue>
+    ) : ValidationResult
 
 
-sealed interface ValidationResult<out T> {
-    data class Valid<T>(val value: T) : ValidationResult<T>
-    data class Failure(val errors: List<ValidationError>) : ValidationResult<Nothing>
 }

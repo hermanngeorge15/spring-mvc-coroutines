@@ -1,0 +1,158 @@
+### ══════════════════════════════════════════════
+### FLAT SCHEMA
+### fields: token (required), requestId (required)
+### allOf:  aud, baut (CRITICAL)
+### ══════════════════════════════════════════════
+
+### Flat — SUCCESS (all present)
+POST http://localhost:9999/api/simple
+Content-Type: application/json
+
+{
+  "token": "abc-123-xyz",
+  "requestId": "req-77",
+  "aud": "aud-value",
+  "baut": "baut-value"
+}
+
+### Flat — FAILURE (missing requestId)
+POST http://localhost:9999/api/simple
+Content-Type: application/json
+
+{
+  "token": "abc-123-xyz",
+  "aud": "aud-value",
+  "baut": "baut-value"
+}
+
+### Flat — FAILURE (missing aud from allOf group)
+POST http://localhost:8080/api/simple
+Content-Type: application/json
+
+{
+  "token": "abc-123-xyz",
+  "requestId": "req-77",
+  "baut": "baut-value"
+}
+
+### Flat — FAILURE (blank token + missing both allOf)
+POST http://localhost:8080/api/simple
+Content-Type: application/json
+
+{
+  "token": "",
+  "requestId": "req-77"
+}
+
+### ══════════════════════════════════════════════
+### NESTED SCHEMA
+### required:    token, data.userId
+### defaultable: data.role → "USER", data.features.beta → false
+### allOf:       raut, aud, baut (CRITICAL)
+### audit:       audit1, data.audit2
+### ══════════════════════════════════════════════
+
+### Nested — SUCCESS (all fields present, no defaults needed)
+POST http://localhost:8080/api/process
+Content-Type: application/json
+
+{
+  "token": "abc-123-xyz",
+  "raut": "raut-value",
+  "aud": "aud-value",
+  "baut": "baut-value",
+  "audit1": "trace-001",
+  "data": {
+    "userId": 42,
+    "audit2": "trace-002",
+    "role": "ADMIN",
+    "features": {
+      "beta": true
+    }
+  }
+}
+
+### Nested — SUCCESS (defaults applied: role → "USER", beta → false)
+POST http://localhost:8080/api/process
+Content-Type: application/json
+
+{
+  "token": "abc-123-xyz",
+  "raut": "raut-value",
+  "aud": "aud-value",
+  "baut": "baut-value",
+  "data": {
+    "userId": 42,
+    "features": {}
+  }
+}
+
+### Nested — SUCCESS (audit fields missing — no error, just absent)
+POST http://localhost:8080/api/process
+Content-Type: application/json
+
+{
+  "token": "abc-123-xyz",
+  "raut": "raut-value",
+  "aud": "aud-value",
+  "baut": "baut-value",
+  "data": {
+    "userId": 42,
+    "role": "ADMIN",
+    "features": {
+      "beta": true
+    }
+  }
+}
+
+### Nested — FAILURE (missing data.userId)
+POST http://localhost:8080/api/process
+Content-Type: application/json
+
+{
+  "token": "abc-123-xyz",
+  "raut": "raut-value",
+  "aud": "aud-value",
+  "baut": "baut-value",
+  "audit1": "trace-001",
+  "data": {
+    "audit2": "trace-002",
+    "role": "ADMIN",
+    "features": {
+      "beta": true
+    }
+  }
+}
+
+### Nested — FAILURE (missing raut and baut from allOf group)
+POST http://localhost:8080/api/process
+Content-Type: application/json
+
+{
+  "token": "abc-123-xyz",
+  "aud": "aud-value",
+  "audit1": "trace-001",
+  "data": {
+    "userId": 42,
+    "audit2": "trace-002",
+    "role": "ADMIN",
+    "features": {
+      "beta": true
+    }
+  }
+}
+
+### Nested — FAILURE (blank token + blank userId + missing allOf)
+POST http://localhost:8080/api/process
+Content-Type: application/json
+
+{
+  "token": "",
+  "aud": "aud-value",
+  "data": {
+    "userId": "",
+    "features": {
+      "beta": true
+    }
+  }
+}

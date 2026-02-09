@@ -1,0 +1,130 @@
+### ──────────────────────────────────────────────
+### Flat request — SUCCESS
+### ──────────────────────────────────────────────
+
+POST http://localhost:8080/api/simple
+Content-Type: application/json
+
+{
+  "token": "abc-123-xyz",
+  "requestId": "req-77",
+  "aud": "aud-value",
+  "baut": "baut-value"
+}
+
+### ──────────────────────────────────────────────
+### Flat request — FAILURE (missing requestId, baut)
+### ──────────────────────────────────────────────
+
+POST http://localhost:8080/api/simple
+Content-Type: application/json
+
+{
+  "token": "abc-123-xyz",
+  "aud": "aud-value"
+}
+
+### ──────────────────────────────────────────────
+### Nested request — SUCCESS (all fields present)
+### ──────────────────────────────────────────────
+
+POST http://localhost:9999/api/process
+Content-Type: application/json
+
+{
+  "token": "abc-123-xyz",
+  "raut": "raut-value",
+  "aud": "aud-value",
+  "baut": "baut-value",
+  "audit1": "trace-001",
+  "data": {
+    "userId": 42,
+    "audit2": "trace-002",
+    "roleId": 42,
+    "role": "ADMIN",
+    "features": {
+      "beta": true,
+      "darkMode": false
+    }
+  }
+}
+
+### ──────────────────────────────────────────────
+### Nested request — SUCCESS with defaults applied
+### (role missing → "USER", beta missing → false)
+### ──────────────────────────────────────────────
+
+POST http://localhost:8080/api/process
+Content-Type: application/json
+
+{
+  "token": "abc-123-xyz",
+  "raut": "raut-value",
+  "aud": "aud-value",
+  "baut": "baut-value",
+  "audit1": "trace-001",
+  "data": {
+    "userId": 42,
+    "audit2": "trace-002",
+    "roleId": 42,
+    "features": {
+      "darkMode": false
+    }
+  }
+}
+
+### ──────────────────────────────────────────────
+### Nested request — FAILURE (missing auth + userId)
+### ──────────────────────────────────────────────
+
+POST http://localhost:8080/api/process
+Content-Type: application/json
+
+{
+  "token": "abc-123-xyz",
+  "aud": "aud-value",
+  "audit1": "trace-001",
+  "data": {
+    "roleId": 42,
+    "features": {
+      "darkMode": false
+    }
+  }
+}
+
+### Expected response:
+# {
+#   "errors": [
+#     { "field": "data.userId", "message": "Required field 'data.userId' is missing or blank", "severity": "CRITICAL" },
+#     { "field": "raut, baut", "message": "Auth fields missing: [raut, baut]", "severity": "CRITICAL" }
+#   ],
+#   "audit": {
+#     "audit1": "trace-001",
+#     "data.audit2": null
+#   }
+# }
+
+### ──────────────────────────────────────────────
+### Nested request — FAILURE (blank strings)
+### ──────────────────────────────────────────────
+
+POST http://localhost:8080/api/process
+Content-Type: application/json
+
+{
+  "token": "",
+  "raut": "   ",
+  "aud": "aud-value",
+  "baut": "baut-value",
+  "data": {
+    "userId": "",
+    "role": "",
+    "features": {
+      "beta": true,
+      "darkMode": false
+    }
+  }
+}
+
+### Expected: token CRITICAL, userId CRITICAL, raut in group CRITICAL
+### role gets default "USER", beta stays true

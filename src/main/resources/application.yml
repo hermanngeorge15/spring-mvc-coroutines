@@ -10,34 +10,24 @@ spring:
 server:
   port: 9999
 
-# --- Logbook: masks HTTP request/response bodies, headers, and query params ---
+# --- Logbook: HTTP request/response logging ---
+# Custom SHA-256 masking is handled by LogbookConfiguration beans:
+#   - headerFilter(): masks Authorization, X-API-Key, etc. with SHA-256
+#   - queryFilter(): masks password, token, etc. in query params with SHA-256
+#   - bodyFilter(): masks sensitive JSON fields with SHA-256
+#
+# Only fields NOT handled by custom filters should be listed here:
 logbook:
   filter:
     enabled: true
   format:
     style: json
   obfuscate:
-    headers:
-      - Authorization
-      - X-API-Key
-      - X-Auth-Token
-      - Cookie
-      - Set-Cookie
-    parameters:
-      - password
-      - token
-      - apiKey
-      - secret
+    # Headers handled by custom headerFilter() with SHA-256
+    headers: []
+    # Query params handled by custom queryFilter() with SHA-256
+    parameters: []
+    # Only non-SHA256 fields here (custom tokens use simple XXX replacement)
     json-body-fields:
-      - password
-      - token
-      - refreshToken
       - myCustomeToken1
       - mycustomtoken2
-      - apiKey
-      - secret
-      - creditCardNumber
-      - cardNumber
-      - cvv
-      - ssn
-      - nationalId
